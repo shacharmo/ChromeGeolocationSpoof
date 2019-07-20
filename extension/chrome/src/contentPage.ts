@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 function overrideGeolocation(extension) {
   if (!navigator.geolocation)
     return;
@@ -12,6 +14,82 @@ function overrideGeolocation(extension) {
   let spoofedPosition: Position = undefined;
 
   let lastRegisterWatchSuccess: PositionCallback;
+  let route: any;
+  let routePlayRate = 1;
+  let routeCurrentTime = 0;
+  let routeLastPointIndex = 0;
+  let routePlayInterval = 250;
+  let routeTimer: any;
+
+  function playRoute() {
+    routeTimer = setInterval(() => {
+      if (routeLastPointIndex + 1 >= route.length) {
+        pauseRoute();
+        return;
+      }
+
+      routeCurrentTime += (routePlayInterval / 1000) * routePlayRate;
+
+      let newRouteLastPointIndex = routeLastPointIndex;
+      while (route[newRouteLastPointIndex][0] <= routeCurrentTime) {
+        newRouteLastPointIndex++;
+        if (newRouteLastPointIndex >= route.length) {
+          newRouteLastPointIndex = route.length - 1;
+          break;
+        }
+      }
+
+      if (newRouteLastPointIndex == routeLastPointIndex) {
+        return;
+      }
+
+      routeLastPointIndex = newRouteLastPointIndex;
+
+      if (lastRegisterWatchSuccess) {
+        lastRegisterWatchSuccess({
+          coords: {
+            accuracy: 1,
+            altitude: undefined,
+            altitudeAccuracy: undefined,
+            heading: undefined,
+            latitude: route[routeLastPointIndex][1],
+            longitude: route[routeLastPointIndex][2],
+            speed: undefined
+          },
+          timestamp: undefined
+        });
+      }
+
+      if (routeLastPointIndex + 1 >= route.length) {
+        pauseRoute();
+      }
+    }, routePlayInterval);
+  }
+
+  function pauseRoute() {
+    if (routeTimer) {
+      clearInterval(routeTimer);
+    }
+  }
+
+  function resetRoute() {
+    routeCurrentTime = 0;
+    routeLastPointIndex = 0;
+    if (route && lastRegisterWatchSuccess) {
+      lastRegisterWatchSuccess({
+        coords: {
+          accuracy: 1,
+          altitude: undefined,
+          altitudeAccuracy: undefined,
+          heading: undefined,
+          latitude: route[0][1],
+          longitude: route[0][2],
+          speed: undefined
+        },
+        timestamp: undefined
+      });
+    }
+  }
 
   window.addEventListener('message', (event: any) => {
     if (event.source != window || !event.data.type)
@@ -49,6 +127,26 @@ function overrideGeolocation(extension) {
           return;
         spoofedPosition = event.data.position;
         lastRegisterWatchSuccess(event.data.position);
+        break;
+      case 'setRoute':
+        route = event.data.route;
+        pauseRoute();
+        resetRoute();
+        break;
+      case 'playRoute':
+        routePlayRate = event.data.playbackRate;
+        if (route)
+          playRoute();
+        break;
+        case 'pauseRoute':
+        routePlayRate = event.data.playbackRate;
+        if (route)
+          pauseRoute();
+        break;
+      case 'resetRoute':
+        routePlayRate = event.data.playbackRate;
+        if (route)
+          resetRoute();
         break;
       default:
         break;
@@ -160,6 +258,27 @@ chrome.runtime.onMessage.addListener((request, sender, respond) => {
           }
         }, '*');
         return resolve();
+      case 'getRoute':
+        const routeServiceUrl = 'http://localhost:3000/route?from={from}&to={to}'; // TODO get url from configuration (options)/storage
+        const url = routeServiceUrl.replace('{from}', encodeURIComponent(request.from)).replace('{to}', encodeURIComponent(request.to));
+        console.log(url);
+        // TODO move service logic to extension (no need for external service, but requires more configuration/options)
+        axios.get(url).then(({ data }) => {
+          window.postMessage({
+            type: 'setRoute',
+            route: data
+          }, '*');
+          resolve('Route ready to play')
+        });
+        break;
+      case 'playRoute':
+      case 'pauseRoute':
+      case 'resetRoute':
+        window.postMessage({
+          type: request.type,
+          playbackRate: request.speed
+        }, '*');
+        break;
       default:
         return reject(`'${request.type}' is not a supported request type`);
     }

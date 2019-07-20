@@ -1,6 +1,44 @@
 <h3>Override location</h3>
 <table>
-  <tr><td>Latitude (deg): </td><td><input type="text" [(ngModel)]="manualLat"></td></tr>
-  <tr><td>Longitude (deg): </td><td><input type="text" [(ngModel)]="manualLon"></td></tr>
-  <tr><td><button (click)="getManualLocation()">Get</button> <button (click)="setManualLocation()">Set</button></td></tr>
+  <tr>
+    <td>Latitude (deg): </td>
+    <td><input type="text" [(ngModel)]="manualLat"></td>
+  </tr>
+  <tr>
+    <td>Longitude (deg): </td>
+    <td><input type="text" [(ngModel)]="manualLon"></td>
+  </tr>
+  <tr>
+    <td><button (click)="getManualLocation()">Get</button> <button (click)="setManualLocation()">Set</button></td>
+  </tr>
+</table>
+<h3>Simulate route</h3>
+<table>
+  <tr>
+    <td>From: </td>
+    <td><input type="text" [(ngModel)]="fromAddress"></td>
+  </tr>
+  <tr>
+    <td>To: </td>
+    <td><input type="text" [(ngModel)]="toAddress"></td>
+  </tr>
+  <tr>
+    <td>
+      <button (click)="getRoute()">Search</button>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">{{routeStatus}}</td>
+  </tr>
+  <tr>
+    <td>Play speed</td>
+    <td><input type="text" [(ngModel)]="routeSpeed"></td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <button (click)="playRoute()">Play</button>
+      <button (click)="pauseRoute()">Pause</button>
+      <button (click)="resetRoute()">Reset</button>
+    </td>
+  </tr>
 </table>
