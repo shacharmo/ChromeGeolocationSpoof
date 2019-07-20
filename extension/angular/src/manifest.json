@@ -1,0 +1,24 @@
+{
+  "manifest_version": 2,
+  "name": "Geolocation Spoof Chrome Extension",
+  "short_name": "Geolocation Spoof",
+  "version": "1.0.0",
+  "description": "Geolocation Spoof Chrome Extension. Used for GPS application development",
+  "permissions": ["tabs", "geolocation"],
+  "browser_action": {
+    "default_popup": "index.html",
+    "default_title": "Geolocation Spoof"
+  },
+  "content_scripts": [
+    {
+      "js": ["contentPage.js"],
+      "matches": ["<all_urls>"],
+      "run_at": "document_start"
+    }
+  ],
+  "background": {
+    "scripts": ["backgroundPage.js"],
+    "persistent": false
+  },
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
+}

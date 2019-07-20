@@ -1,0 +1,60 @@
+<html title="Chrome Geolocation Spoof Demo Page">
+
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css"
+        integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+        crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"
+        integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og=="
+        crossorigin=""></script>
+    <style>
+        #mapid {
+            width: 600px;
+            height: 400px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Chrome Geolocation Spoof Demo Page</h1>
+    <p>
+        Install the chrome extension using developer mode.<br />
+        Open extension and set manual positon or load from file.<br />
+        See the position change in text below</br>
+        <br />
+        <a href="https://www.github.com/shacharmo/ChromeGeoLocationSpoof">Repository</a>
+    </p>
+    <h2>Position:</h2>
+    <div id="location">Allow or Block "know your location"</div><br />
+    <div id="mapid"></div>
+    <script>
+        let mymap = L.map('mapid').setView([51.505, -0.09], 13);
+        L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+            maxZoom: 18,
+            id: 'mapbox.streets',
+        }).addTo(mymap);
+        let marker = undefined;
+
+        console.log('registering watchPosition');
+        navigator.geolocation.watchPosition((position) => {
+            console.log(position);
+            const coords = position.coords;
+            document.getElementById('location').innerText = `lat=${coords.latitude}, lon=${coords.longitude}, ` +
+                `alt=${coords.altitude}, accuracy=${coords.accuracy}, altitudeAccuracy=${coords.altitudeAccuracy}, ` +
+                `heading=${coords.heading}, speed=${coords.speed}`;
+            if (marker) {
+                marker.setLatLng(new L.LatLng(coords.latitude, coords.longitude));
+            } else {
+                marker = L.marker([coords.latitude, coords.longitude]).addTo(mymap);
+            }
+            marker.bindPopup(`lat=${coords.latitude}, lon=${coords.longitude}<br/>accuracy=${coords.accuracy}`).openPopup();
+            mymap.setView([coords.latitude, coords.longitude], 13);
+        }, (positionError) => {
+            console.log(positionError);
+            document.getElementById('location').innerText = `Error: code=${positionError.code}, message=${positionError.message}`;
+        });
+    </script>
+</body>
+
+</html>
