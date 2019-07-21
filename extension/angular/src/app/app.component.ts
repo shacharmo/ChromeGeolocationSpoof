@@ -6,12 +6,10 @@ import { TAB_ID } from './tab-id.injector';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-// tslint:disable:variable-name
+
 export class AppComponent {
-  @Input() manualLat: number;
-  @Output() manualLatChange = new EventEmitter<number>();
-  @Input() manualLon: number;
-  @Output() manualLonChange = new EventEmitter<number>();
+  manualLat: number;
+  manualLon: number;
   fromAddress: string;
   toAddress: string;
   routeStatus: string;
@@ -24,11 +22,12 @@ export class AppComponent {
     private readonly _changeDetector: ChangeDetectorRef
   ) {
     // TODO get values from configuration/storage
+    // TODO option to set (and reset) global override
     this.manualLat = 33;
     this.manualLon = 36;
     this.fromAddress = 'דיזינגוף 50, תל אביב';
     this.toAddress = 'עזה 17, ירושלים';
-    this.routeStatus = 'No route loaded'; // TODO properly bind (via observable) to always instant update (tap change detection)
+    this.routeStatus = 'No route loaded';
     this.routeSpeed = 10;
   }
 
@@ -37,10 +36,11 @@ export class AppComponent {
       type: 'getLocation'
     }
     chrome.tabs.sendMessage(this.tabId, payload, (message) => {
-      this.manualLat = message.coords.latitude;
-      this.manualLatChange.emit(this.manualLat);
-      this.manualLon = message.coords.longitude;
-      this.manualLonChange.emit(this.manualLon);
+      if (message.coords) {
+        this.manualLat = message.coords.latitude;
+        this.manualLon = message.coords.longitude;
+      }
+      this._changeDetector.detectChanges();
     });
   }
 
@@ -61,6 +61,7 @@ export class AppComponent {
     }
     chrome.tabs.sendMessage(this.tabId, payload, message => {
       this.routeStatus = message;
+      this._changeDetector.detectChanges();
     });
   }
 
