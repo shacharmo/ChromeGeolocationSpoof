@@ -9,6 +9,7 @@ function overrideGeolocation(extension) {
   const orgGetCurrentPosition = navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);
   const orgClearWatch = navigator.geolocation.clearWatch;
 
+  // TODO support more than one callback
   let callbackCounter = 0;
   const callbacks = {};
   let spoofedPosition: Position = undefined;
