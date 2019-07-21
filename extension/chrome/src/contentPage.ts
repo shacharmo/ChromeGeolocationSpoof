@@ -22,6 +22,9 @@ function overrideGeolocation(extension) {
   let routeTimer: any;
 
   function playRoute() {
+    if (routeTimer) {
+      pauseRoute();
+    }
     routeTimer = setInterval(() => {
       if (routeLastPointIndex + 1 >= route.length) {
         pauseRoute();
