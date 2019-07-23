@@ -30,6 +30,7 @@
     <div id="mapid"></div>
     <script>
         function testSetPosition() {
+            /*
             window.postMessage({
                 type: 'setLocation',
                 position: {
@@ -45,6 +46,8 @@
                     timestamp: undefined
                 }
             });
+            */
+           window.postMessage({ type: "getRoute", from: "times square, new york", to: "battery park, new york" }, "*");
         }
 
         let mymap = L.map('mapid').setView([51.505, -0.09], 13);
