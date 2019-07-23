@@ -68,7 +68,7 @@ function overrideGeolocation(extension) {
         if (routeTimer) {
             pauseRoute();
         }
-        // TODO test interpolate point before timer
+        
         routeTimer = setInterval(() => {
             if (routeLastPointIndex + 1 >= route.length) {
                 pauseRoute();
