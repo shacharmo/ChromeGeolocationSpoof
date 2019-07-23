@@ -4,6 +4,7 @@
   "description": "Get route using API and returns approximate GPS positions on the route. Used for GPS apps development",
   "main": "index.js",
   "scripts": {
+    "run": "node -r esm index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
