@@ -22,10 +22,30 @@ function overrideGeolocation(extension) {
   let routePlayInterval = 250;
   let routeTimer: any;
 
+  function interpolatePoint(origin, time) {
+    // TODO fix imports
+    return;
+    /* const x = time - origin.time;
+    const distance = origin.speed * 3600 / 1000 * x;
+    const p1 = { latitude: origin.coordinates[0], longitude: origin.coordinates[1] };
+    const coords = computeDistance(p1, distance, origin.bearing);
+
+    const point = {
+      interpolated: true,
+      // distance, // TODO show remaining distance (a.distance - distance)
+      bearing: origin.bearing,
+      speed: origin.speed,
+      time,
+      coordinates: [coords.latitude, coords.longitude]
+    };
+    return point;*/
+  }
+
   function playRoute() {
     if (routeTimer) {
       pauseRoute();
     }
+    // TODO test interpolate point before timer
     routeTimer = setInterval(() => {
       if (routeLastPointIndex + 1 >= route.length) {
         pauseRoute();
@@ -34,33 +54,34 @@ function overrideGeolocation(extension) {
 
       routeCurrentTime += (routePlayInterval / 1000) * routePlayRate;
 
-      let newRouteLastPointIndex = routeLastPointIndex;
-      while (route[newRouteLastPointIndex][0] <= routeCurrentTime) {
-        newRouteLastPointIndex++;
-        if (newRouteLastPointIndex >= route.length) {
-          newRouteLastPointIndex = route.length - 1;
-          break;
-        }
+      let routePoint = undefined;
+      let routeNextPointIndex = routeLastPointIndex;
+      while (route[routeNextPointIndex] && route[routeNextPointIndex].time <= routeCurrentTime) {
+        routeNextPointIndex++;
       }
-
-      if (newRouteLastPointIndex == routeLastPointIndex) {
-        return;
+      if (routeNextPointIndex > routeLastPointIndex) {
+        routeLastPointIndex = routeNextPointIndex;
+        routePoint = route[routeLastPointIndex - 1];
+      } else if (routeLastPointIndex == route.length) {
+        routePoint = route[route.length - 1];
+        pauseRoute();
+      } else {
+        routePoint = interpolatePoint(route[routeLastPointIndex], routeCurrentTime);
+        return; // TODO remove
       }
-
-      routeLastPointIndex = newRouteLastPointIndex;
 
       if (lastRegisterWatchSuccess) {
         lastRegisterWatchSuccess({
           coords: {
-            accuracy: 1,
+            accuracy: 1, // TODO form configuration
             altitude: undefined,
             altitudeAccuracy: undefined,
-            heading: undefined,
-            latitude: route[routeLastPointIndex][1],
-            longitude: route[routeLastPointIndex][2],
-            speed: undefined
+            heading: routePoint.bearing,
+            latitude: routePoint.coordinates[0],
+            longitude: routePoint.coordinates[1],
+            speed: routePoint.speed
           },
-          timestamp: undefined
+          timestamp: undefined // TODO set timestamp?
         });
       }
 
@@ -86,8 +107,8 @@ function overrideGeolocation(extension) {
           altitude: undefined,
           altitudeAccuracy: undefined,
           heading: undefined,
-          latitude: route[0][1],
-          longitude: route[0][2],
+          latitude: route[0].coordinates[0],
+          longitude: route[0].coordinates[1],
           speed: undefined
         },
         timestamp: undefined
@@ -142,7 +163,7 @@ function overrideGeolocation(extension) {
         if (route)
           playRoute();
         break;
-        case 'pauseRoute':
+      case 'pauseRoute':
         routePlayRate = event.data.playbackRate;
         if (route)
           pauseRoute();

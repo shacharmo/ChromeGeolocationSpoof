@@ -28,17 +28,45 @@ async function getLocation(address) {
     })
 }
 
+function arePointsEqual(orgPoint, routePoint) {
+    if (!orgPoint || !routePoint)
+        return false;
+
+    const orgPointLat = Math.floor(orgPoint.coordinates[0] * 10000);
+    const orgPointLon = Math.floor(orgPoint.coordinates[1] * 10000);
+    const routePointLat = Math.floor(routePoint[0] * 10000);
+    const routePointLon = Math.floor(routePoint[1] * 10000);
+    return (orgPointLat == routePointLat) && (orgPointLon == routePointLon);
+}
+
+function calcDistanceAndBearing(a, b) {
+    if (!a || !b) {
+        return 0;
+    }
+
+    const p1 = new LatLon(a[0], a[1]);
+    const p2 = new LatLon(b[0], b[1]);
+    const distance = p1.distanceTo(p2);
+    const bearing = p1.initialBearingTo(p2)
+    return { distance, bearing };
+}
+
 async function getRoute(from, to) {
     return new Promise((resolve, reject) => {
         const url = config.routeUrl.replace('{from}', encodeURIComponent(from))
             .replace('{to}', encodeURIComponent(to))
             .replace('{key}', config.bingApiKey);
         console.log(url);
-        axios.get(url).then((result) => {
+        axios.get(url).then(({data}) => {
             try {
-                //const points = result.data.resourceSets[0].resources[0].routeLegs[0].itineraryItems.map(x => x.maneuverPoint.coordinates);
-                const points = result.data.resourceSets[0].resources[0].routePath.line.coordinates;
-                resolve(points);
+                const routePoints = data.resourceSets[0].resources[0].routeLegs[0].itineraryItems.map(x => ({
+                    coordinates: x.maneuverPoint.coordinates,
+                    distance: x.travelDistance,
+                    duration: x.travelDuration,
+                    speed: Math.ceil(x.travelDistance * 3600 / x.travelDuration)
+                }));
+                const pathPoints = data.resourceSets[0].resources[0].routePath.line.coordinates;
+                resolve({ routePoints, pathPoints });
             } catch (err) {
                 console.error('getRoute', err);
                 reject(err);
@@ -47,21 +75,30 @@ async function getRoute(from, to) {
     });
 }
 
-function calculatePoints(route) {
+function calculatePoints(routePoints, pathPoints) {
     const points = [];
-    const speed = config.speedKMPH * 1000 / 3600; // speed in m/s
+    let j = 0;
     let totalTime = 0;
-    for (let i = 0; i < route.length - 1; i++) {
-        // TODO improve by caching previous point
-        points.push([totalTime, route[i][0], route[i][1]]);
+    for (let i = 0; i < pathPoints.length; i++) {
+        const currentPathPoint = pathPoints[i];
+        const nextPathPoint = pathPoints[i + 1];
+        if (arePointsEqual(routePoints[j + 1], currentPathPoint)) {
+            j++;
+        }
+        const speed = routePoints[j].speed;
+        const { distance, bearing } = calcDistanceAndBearing(currentPathPoint, nextPathPoint);
 
-        const p1 = new LatLon(route[i][0], route[i][1]);
-        const p2 = new LatLon(route[i+1][0], route[i+1][1]);
-        const distnace = p1.distanceTo(p2);
-        // TODO interpolate between points
-        totalTime += distnace / speed;
+        points.push({
+            distance,
+            bearing,
+            speed,
+            time: totalTime,
+            coordinates: currentPathPoint
+        });
+
+        if (distance && speed)
+            totalTime += distance / speed;
     }
-    points.push([totalTime, route[route.length - 1][0], route[route.length - 1][1]]);
     return points;
 }
 
@@ -85,8 +122,8 @@ app.get('/route', async (req, res) => {
         return res.status(400).send('No to address or toLat/toLon pair');
     }
 
-    const route = await getRoute(from, to);
-    const gpsPoints = calculatePoints(route);
+    const { routePoints, pathPoints } = await getRoute(from, to);
+    const gpsPoints = calculatePoints(routePoints, pathPoints);
     res.send(gpsPoints);
 });
 
