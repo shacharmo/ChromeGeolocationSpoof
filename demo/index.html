@@ -25,26 +25,37 @@
         <a href="https://www.github.com/shacharmo/ChromeGeoLocationSpoof">Repository</a>
     </p>
     <h2>Position:</h2>
-    <button onclick="testSetPosition()">set pos</button>
+    <button onclick="startRoute()">start route</button>
     <div id="location">Allow or Block "know your location"</div><br />
     <div id="mapid"></div>
     <script>
-        function testSetPosition() {
+        var lastPos = undefined;
+        window.addEventListener('message', (event) => {
+            if (!event || !event.data || event.data.type !== 'getRouteCallback' || !event.data.result) {
+                return;
+            }
             window.postMessage({
-                type: 'setLocation',
-                position: {
-                    coords: {
-                        accuracy: 13,
-                        altitude: undefined,
-                        altitudeAccuracy: undefined,
-                        heading: undefined,
-                        latitude: 33.3,
-                        longitude: 35.3,
-                        speed: undefined
-                    },
-                    timestamp: undefined
-                }
-            });
+                type: 'playRoute',
+                playbackRate: 50
+            }, '*');
+        });
+
+        function startRoute() {
+           window.postMessage({ type: "getRoute", from: "times square, new york", to: "battery park, new york" }, "*");
+        }
+
+        function showPositionOnMap(position) {
+            const coords = position.coords;
+            document.getElementById('location').innerText = `lat=${coords.latitude}, lon=${coords.longitude}, ` +
+                `alt=${coords.altitude}, accuracy=${coords.accuracy}, altitudeAccuracy=${coords.altitudeAccuracy}, ` +
+                `heading=${coords.heading}, speed=${coords.speed}`;
+            if (marker) {
+                marker.setLatLng(new L.LatLng(coords.latitude, coords.longitude));
+            } else {
+                marker = L.marker([coords.latitude, coords.longitude]).addTo(mymap);
+            }
+            marker.bindPopup(`lat=${coords.latitude}, lon=${coords.longitude}<br/>accuracy=${coords.accuracy}`).openPopup();
+            mymap.setView([coords.latitude, coords.longitude], 13);
         }
 
         let mymap = L.map('mapid').setView([51.505, -0.09], 13);
@@ -58,17 +69,8 @@
         console.log('registering watchPosition');
         navigator.geolocation.watchPosition((position) => {
             console.log(position);
-            const coords = position.coords;
-            document.getElementById('location').innerText = `lat=${coords.latitude}, lon=${coords.longitude}, ` +
-                `alt=${coords.altitude}, accuracy=${coords.accuracy}, altitudeAccuracy=${coords.altitudeAccuracy}, ` +
-                `heading=${coords.heading}, speed=${coords.speed}`;
-            if (marker) {
-                marker.setLatLng(new L.LatLng(coords.latitude, coords.longitude));
-            } else {
-                marker = L.marker([coords.latitude, coords.longitude]).addTo(mymap);
-            }
-            marker.bindPopup(`lat=${coords.latitude}, lon=${coords.longitude}<br/>accuracy=${coords.accuracy}`).openPopup();
-            mymap.setView([coords.latitude, coords.longitude], 13);
+            lastPos = position.coords;
+            showPositionOnMap(position);
         }, (positionError) => {
             console.log(positionError);
             document.getElementById('location').innerText = `Error: code=${positionError.code}, message=${positionError.message}`;

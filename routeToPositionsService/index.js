@@ -3,8 +3,8 @@ import axios from 'axios';
 import config from './config';
 import LatLon from 'geodesy/latlon-spherical';
 
-// TODO create proper scripts in npm (currently run with node -r esm index.js)
 // TODO refactor to logic and handlers
+const metersPerSecondToKilometersPerHour = 3.6;
 
 const app = express()
 const port = process.env.PORT || 3000;
@@ -79,11 +79,13 @@ function calculatePoints(routePoints, pathPoints) {
     const points = [];
     let j = 0;
     let totalTime = 0;
+    routePoints[0].lineIndex = 0;
     for (let i = 0; i < pathPoints.length; i++) {
         const currentPathPoint = pathPoints[i];
         const nextPathPoint = pathPoints[i + 1];
         if (arePointsEqual(routePoints[j + 1], currentPathPoint)) {
             j++;
+            routePoints[j].lineIndex = i;
         }
         const speed = routePoints[j].speed;
         const { distance, bearing } = calcDistanceAndBearing(currentPathPoint, nextPathPoint);
@@ -97,7 +99,7 @@ function calculatePoints(routePoints, pathPoints) {
         });
 
         if (distance && speed)
-            totalTime += distance / speed;
+        totalTime += distance / (speed / metersPerSecondToKilometersPerHour);
     }
     return points;
 }
