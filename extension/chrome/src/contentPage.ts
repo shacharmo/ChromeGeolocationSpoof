@@ -34,7 +34,8 @@ function overrideGeolocation(extension) {
     // TODO test why distance and distance2 differ so much
     // console.log(`time=${time}, timeDiff=${timeDiff}, distance=${distance} vs ${distance2}, bearing=${bearing}, origin=${JSON.stringify(origin)}`);
 
-    // TODO add credit
+    // Code from https://www.npmjs.com/package/geodesy. 
+    // Cannot be use via package due to webpack/es6 compbatibility, also only needed the following part:
     // sinφ2 = sinφ1⋅cosδ + cosφ1⋅sinδ⋅cosθ
     // tanΔλ = sinθ⋅sinδ⋅cosφ1 / cosδ−sinφ1⋅sinφ2
     // see mathforum.org/library/drmath/view/52049.html for derivation
@@ -79,17 +80,18 @@ function overrideGeolocation(extension) {
 
       let routePoint = undefined;
       let routeNextPointIndex = routeLastPointIndex;
+      const maxIndex = route.length - 1;
       while (route[routeNextPointIndex] && route[routeNextPointIndex].time <= routeCurrentTime) {
         routeNextPointIndex++;
       }
-      if (routeNextPointIndex > routeLastPointIndex) {
+      if (routeLastPointIndex >= maxIndex) {
+        routePoint = route[maxIndex];
+        pauseRoute();
+        // console.log(`last route point: index=${route.length - 1}, time=${routeCurrentTime}, point=${JSON.stringify(routePoint)}`)
+      } else if (routeNextPointIndex > routeLastPointIndex) {
         routeLastPointIndex = routeNextPointIndex;
         routePoint = route[routeLastPointIndex - 1];
         // console.log(`org route point: index=${routeLastPointIndex - 1}, time=${routeCurrentTime}, point=${JSON.stringify(routePoint)}`)
-      } else if (routeLastPointIndex == route.length) {
-        routePoint = route[route.length - 1];
-        pauseRoute();
-        // console.log(`last route point: index=${route.length - 1}, time=${routeCurrentTime}, point=${JSON.stringify(routePoint)}`)
       } else {
         routePoint = interpolatePoint(route[routeLastPointIndex - 1], route[routeLastPointIndex], routeCurrentTime);
         // console.log(`inter route point: index=${routeLastPointIndex - 1}, time=${routeCurrentTime}, point=${JSON.stringify(routePoint)}`)
