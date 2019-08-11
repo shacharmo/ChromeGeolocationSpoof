@@ -71,11 +71,6 @@ function overrideGeolocation(extension) {
     }
 
     routeTimer = setInterval(() => {
-      if (routeLastPointIndex + 1 >= route.length) {
-        pauseRoute();
-        return;
-      }
-
       routeCurrentTime += (routePlayInterval / 1000) * routePlayRate;
 
       let routePoint = undefined;
@@ -111,11 +106,7 @@ function overrideGeolocation(extension) {
           timestamp: undefined // TODO set timestamp?
         });
       }
-
-      if (routeLastPointIndex + 1 >= route.length) {
-        pauseRoute();
-      }
-    }, routePlayInterval);
+``    }, routePlayInterval);
   }
 
   function pauseRoute() {
