@@ -26,7 +26,7 @@
   "homepage": "https://github.com/shacharmo/ChromeGeolocationSpoof#readme",
   "dependencies": {
     "axios": "^0.19.0",
-    "express": "^4.17.1",
+    "express": "^4.18.2",
     "geodesy": "^2.2.0"
   },
   "devDependencies": {
